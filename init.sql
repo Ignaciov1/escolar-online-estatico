@@ -5,6 +5,7 @@
 -- Ejecutar en RDS MySQL
 -- Agrega tabla ordenes sobre el schema existente de EA2
 
+CREATE DATABASE IF NOT EXISTS escolar_online;
 USE escolar_online;
 
 -- Tabla de ordenes (nueva en EA3)

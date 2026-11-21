@@ -18,7 +18,7 @@ spec:
     spec:
       containers:
       - name: get-products
-        image: <ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/escolaronline-get-products:latest
+        image: ${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/escolaronline-get-products:latest
         ports:
         - containerPort: 3001
         env:
@@ -68,7 +68,7 @@ spec:
     spec:
       containers:
       - name: create-product
-        image: <ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/escolaronline-create-product:latest
+        image: ${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/escolaronline-create-product:latest
         ports:
         - containerPort: 3002
         env:
@@ -118,7 +118,7 @@ spec:
     spec:
       containers:
       - name: update-product
-        image: <ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/escolaronline-update-product:latest
+        image: ${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/escolaronline-update-product:latest
         ports:
         - containerPort: 3003
         env:
@@ -168,7 +168,7 @@ spec:
     spec:
       containers:
       - name: delete-product
-        image: <ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/escolaronline-delete-product:latest
+        image: ${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/escolaronline-delete-product:latest
         ports:
         - containerPort: 3004
         env:
@@ -223,3 +223,63 @@ spec:
         averageUtilization: 70
 
 # 2026 - Disenador asignatura: Ignacio A. Pastenet M.
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: create-product-hpa
+  namespace: escolaronline
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: create-product
+  minReplicas: 2
+  maxReplicas: 5
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: update-product-hpa
+  namespace: escolaronline
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: update-product
+  minReplicas: 2
+  maxReplicas: 5
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: delete-product-hpa
+  namespace: escolaronline
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: delete-product
+  minReplicas: 2
+  maxReplicas: 5
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70

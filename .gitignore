@@ -1,0 +1,16 @@
+# Archivos temporales y dependencias
+contenido_repo.txt
+**/node_modules/
+lambda/*.zip
+
+# Configuracion generada dinamicamente en despliegue
+S3Frontend/js/config.js
+k8s/rendered/
+
+# Terraform
+terraform/.terraform/
+terraform/*.tfstate
+terraform/*.tfstate.*
+terraform/*.tfvars
+terraform/.terraform.lock.hcl
+terraform/crash.log

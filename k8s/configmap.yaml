@@ -4,7 +4,7 @@ metadata:
   name: escolaronline-config
   namespace: escolaronline
 data:
-  DB_HOST: "<RDS_ENDPOINT>"
+  DB_HOST: "${RDS_ENDPOINT}"
   DB_NAME: "escolar_online"
   DB_PORT: "3306"
 # 2026 - Disenador asignatura: Ignacio A. Pastenet M.

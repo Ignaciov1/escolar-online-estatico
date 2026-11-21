@@ -1,6 +1,6 @@
 // EscolarOnline - Frontend S3 con Carrito + Ordenes - ACT3.3
 // Configuracion: cambiar API_URL con la URL de API Gateway despues de crear
-const API_URL = "https://<API_ID>.execute-api.us-east-1.amazonaws.com/prod";
+const API_URL = (window.APP_CONFIG && window.APP_CONFIG.API_URL) || "https://<API_ID>.execute-api.us-east-1.amazonaws.com/prod";
 
 document.addEventListener('DOMContentLoaded', cargarProductos);
 
@@ -89,6 +89,7 @@ async function crearOrden() {
         if (!response.ok) throw new Error(data.error);
         mostrarMensaje('Su pedido fue procesado - Orden: ' + data.orderId + ' - Total: $' + data.total.toLocaleString('es-CL'), 'exito');
         verCarrito();
+        setTimeout(verCarrito, 3000);
     } catch (error) { mostrarMensaje('Error orden: ' + error.message, 'error'); }
 }
 

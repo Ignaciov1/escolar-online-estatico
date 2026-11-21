@@ -1,26 +1,23 @@
-#!/bin/bash
-# EscolarOnline - Build y Push imagenes a ECR (ACT3.3 - 4 microservicios EKS)
-REGION="us-east-1"
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+REGION="${AWS_REGION:-us-east-1}"
+PLATFORM="${DOCKER_PLATFORM:-linux/arm64}"
 ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-echo "=== Account: $ACCOUNT_ID | Region: $REGION ==="
 
-aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com
+echo "=== Account: $ACCOUNT_ID | Region: $REGION | Platform: $PLATFORM ==="
 
-REPOS=("escolaronline-get-products" "escolaronline-create-product" "escolaronline-update-product" "escolaronline-delete-product")
-for REPO in "${REPOS[@]}"; do
-    aws ecr create-repository --repository-name $REPO --region $REGION 2>/dev/null || echo "$REPO ya existe"
-done
+aws ecr get-login-password --region "$REGION" | docker login --username AWS --password-stdin "$ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com"
 
-docker build --platform linux/arm64 -t escolaronline-get-products ./microserviciosEKSBackend/get-products
-docker build --platform linux/arm64 -t escolaronline-create-product ./microserviciosEKSBackend/create-product
-docker build --platform linux/arm64 -t escolaronline-update-product ./microserviciosEKSBackend/update-product
-docker build --platform linux/arm64 -t escolaronline-delete-product ./microserviciosEKSBackend/delete-product
+SERVICES=("get-products" "create-product" "update-product" "delete-product")
 
-for REPO in "${REPOS[@]}"; do
-    docker tag $REPO $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$REPO:latest
-    docker push $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$REPO:latest
+for SVC in "${SERVICES[@]}"; do
+    REPO="escolaronline-$SVC"
+    aws ecr create-repository --repository-name "$REPO" --region "$REGION" 2>/dev/null || echo "$REPO ya existe"
+    docker build --platform "$PLATFORM" -t "$REPO" "$ROOT_DIR/microserviciosEKSBackend/$SVC"
+    docker tag "$REPO:latest" "$ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$REPO:latest"
+    docker push "$ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$REPO:latest"
 done
 
 echo "=== Push completado ==="
-
-# 2026 - Disenador asignatura: Ignacio A. Pastenet M.
