@@ -1,0 +1,3 @@
+academy_access_key    = "REEMPLAZAR_CON_AWS_ACCESS_KEY_ID"
+academy_secret_key    = "REEMPLAZAR_CON_AWS_SECRET_ACCESS_KEY"
+academy_session_token = "REEMPLAZAR_CON_AWS_SESSION_TOKEN"
