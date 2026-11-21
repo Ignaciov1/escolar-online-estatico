@@ -1,0 +1,225 @@
+# 4 Deployments + Services para EKS (sin frontend - frontend va en S3)
+# ACT3.3 - Arquitectura Hibrida Serverless
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: get-products
+  namespace: escolaronline
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: get-products
+  template:
+    metadata:
+      labels:
+        app: get-products
+    spec:
+      containers:
+      - name: get-products
+        image: <ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/escolaronline-get-products:latest
+        ports:
+        - containerPort: 3001
+        env:
+        - name: PORT
+          value: "3001"
+        - name: DB_HOST
+          valueFrom: { configMapKeyRef: { name: escolaronline-config, key: DB_HOST } }
+        - name: DB_NAME
+          valueFrom: { configMapKeyRef: { name: escolaronline-config, key: DB_NAME } }
+        - name: DB_PORT
+          valueFrom: { configMapKeyRef: { name: escolaronline-config, key: DB_PORT } }
+        - name: DB_USER
+          valueFrom: { secretKeyRef: { name: escolaronline-secret, key: DB_USER } }
+        - name: DB_PASS
+          valueFrom: { secretKeyRef: { name: escolaronline-secret, key: DB_PASS } }
+        resources:
+          requests: { cpu: 100m, memory: 128Mi }
+          limits: { cpu: 250m, memory: 256Mi }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: get-products
+  namespace: escolaronline
+spec:
+  selector:
+    app: get-products
+  ports:
+  - port: 3001
+    targetPort: 3001
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: create-product
+  namespace: escolaronline
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: create-product
+  template:
+    metadata:
+      labels:
+        app: create-product
+    spec:
+      containers:
+      - name: create-product
+        image: <ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/escolaronline-create-product:latest
+        ports:
+        - containerPort: 3002
+        env:
+        - name: PORT
+          value: "3002"
+        - name: DB_HOST
+          valueFrom: { configMapKeyRef: { name: escolaronline-config, key: DB_HOST } }
+        - name: DB_NAME
+          valueFrom: { configMapKeyRef: { name: escolaronline-config, key: DB_NAME } }
+        - name: DB_PORT
+          valueFrom: { configMapKeyRef: { name: escolaronline-config, key: DB_PORT } }
+        - name: DB_USER
+          valueFrom: { secretKeyRef: { name: escolaronline-secret, key: DB_USER } }
+        - name: DB_PASS
+          valueFrom: { secretKeyRef: { name: escolaronline-secret, key: DB_PASS } }
+        resources:
+          requests: { cpu: 100m, memory: 128Mi }
+          limits: { cpu: 250m, memory: 256Mi }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: create-product
+  namespace: escolaronline
+spec:
+  selector:
+    app: create-product
+  ports:
+  - port: 3002
+    targetPort: 3002
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: update-product
+  namespace: escolaronline
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: update-product
+  template:
+    metadata:
+      labels:
+        app: update-product
+    spec:
+      containers:
+      - name: update-product
+        image: <ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/escolaronline-update-product:latest
+        ports:
+        - containerPort: 3003
+        env:
+        - name: PORT
+          value: "3003"
+        - name: DB_HOST
+          valueFrom: { configMapKeyRef: { name: escolaronline-config, key: DB_HOST } }
+        - name: DB_NAME
+          valueFrom: { configMapKeyRef: { name: escolaronline-config, key: DB_NAME } }
+        - name: DB_PORT
+          valueFrom: { configMapKeyRef: { name: escolaronline-config, key: DB_PORT } }
+        - name: DB_USER
+          valueFrom: { secretKeyRef: { name: escolaronline-secret, key: DB_USER } }
+        - name: DB_PASS
+          valueFrom: { secretKeyRef: { name: escolaronline-secret, key: DB_PASS } }
+        resources:
+          requests: { cpu: 100m, memory: 128Mi }
+          limits: { cpu: 250m, memory: 256Mi }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: update-product
+  namespace: escolaronline
+spec:
+  selector:
+    app: update-product
+  ports:
+  - port: 3003
+    targetPort: 3003
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: delete-product
+  namespace: escolaronline
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: delete-product
+  template:
+    metadata:
+      labels:
+        app: delete-product
+    spec:
+      containers:
+      - name: delete-product
+        image: <ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/escolaronline-delete-product:latest
+        ports:
+        - containerPort: 3004
+        env:
+        - name: PORT
+          value: "3004"
+        - name: DB_HOST
+          valueFrom: { configMapKeyRef: { name: escolaronline-config, key: DB_HOST } }
+        - name: DB_NAME
+          valueFrom: { configMapKeyRef: { name: escolaronline-config, key: DB_NAME } }
+        - name: DB_PORT
+          valueFrom: { configMapKeyRef: { name: escolaronline-config, key: DB_PORT } }
+        - name: DB_USER
+          valueFrom: { secretKeyRef: { name: escolaronline-secret, key: DB_USER } }
+        - name: DB_PASS
+          valueFrom: { secretKeyRef: { name: escolaronline-secret, key: DB_PASS } }
+        resources:
+          requests: { cpu: 100m, memory: 128Mi }
+          limits: { cpu: 250m, memory: 256Mi }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: delete-product
+  namespace: escolaronline
+spec:
+  selector:
+    app: delete-product
+  ports:
+  - port: 3004
+    targetPort: 3004
+  type: ClusterIP
+---
+# HPA para los 4 pods
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: get-products-hpa
+  namespace: escolaronline
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: get-products
+  minReplicas: 2
+  maxReplicas: 5
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+
+# 2026 - Disenador asignatura: Ignacio A. Pastenet M.

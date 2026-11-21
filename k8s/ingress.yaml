@@ -1,0 +1,51 @@
+# Ingress (ALB) para el CRUD de productos en EKS.
+# Enruta por metodo HTTP y usa /health como health check.
+# Requiere IngressClass "alb" (creada por v3_6_0_ingclass.yaml del AWS Load Balancer Controller).
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: escolaronline-ingress
+  namespace: escolaronline
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]'
+    alb.ingress.kubernetes.io/healthcheck-path: /health
+    alb.ingress.kubernetes.io/conditions.create-product: '[{"field":"http-request-method","httpRequestMethodConfig":{"Values":["POST"]}}]'
+    alb.ingress.kubernetes.io/conditions.update-product: '[{"field":"http-request-method","httpRequestMethodConfig":{"Values":["PUT"]}}]'
+    alb.ingress.kubernetes.io/conditions.delete-product: '[{"field":"http-request-method","httpRequestMethodConfig":{"Values":["DELETE"]}}]'
+spec:
+  ingressClassName: alb
+  rules:
+  - http:
+      paths:
+      - path: /api/products
+        pathType: Prefix
+        backend:
+          service:
+            name: create-product
+            port:
+              number: 3002
+      - path: /api/products
+        pathType: Prefix
+        backend:
+          service:
+            name: update-product
+            port:
+              number: 3003
+      - path: /api/products
+        pathType: Prefix
+        backend:
+          service:
+            name: delete-product
+            port:
+              number: 3004
+      - path: /api/products
+        pathType: Prefix
+        backend:
+          service:
+            name: get-products
+            port:
+              number: 3001
+
+# 2026 - Disenador asignatura: Ignacio A. Pastenet M.
