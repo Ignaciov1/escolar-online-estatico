@@ -229,9 +229,9 @@ aws apigateway update-integration --region "$REGION" --rest-api-id "$API_ID" --r
 aws apigateway update-integration --region "$REGION" --rest-api-id "$API_ID" --resource-id "$PROD_RES_ID" --http-method POST \
   --patch-operations "op=replace,path=/uri,value=http://${ALB_DNS}/api/products" > /dev/null
 aws apigateway update-integration --region "$REGION" --rest-api-id "$API_ID" --resource-id "$PROD_ID_RES_ID" --http-method PUT \
-  --patch-operations "op=replace,path=/uri,value=http://${ALB_DNS}/api/products/{id}" > /dev/null
+  --patch-operations "$(jq -nc --arg url "http://${ALB_DNS}/api/products/{id}" '[{op:"replace",path:"/uri",value:$url}]')" > /dev/null
 aws apigateway update-integration --region "$REGION" --rest-api-id "$API_ID" --resource-id "$PROD_ID_RES_ID" --http-method DELETE \
-  --patch-operations "op=replace,path=/uri,value=http://${ALB_DNS}/api/products/{id}" > /dev/null
+  --patch-operations "$(jq -nc --arg url "http://${ALB_DNS}/api/products/{id}" '[{op:"replace",path:"/uri",value:$url}]')" > /dev/null
 
 aws apigateway create-deployment --region "$REGION" --rest-api-id "$API_ID" --stage-name prod > /dev/null
 

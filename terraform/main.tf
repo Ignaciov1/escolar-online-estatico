@@ -238,13 +238,6 @@ resource "aws_security_group" "sg_rds" {
   description = "Capa de datos: acceso MySQL 3306 restringido"
   vpc_id      = aws_vpc.eks_vpc.id
 
-  ingress {
-    from_port       = 3306
-    to_port         = 3306
-    protocol        = "tcp"
-    security_groups = [aws_security_group.sg_eks.id]
-  }
-
   egress {
     from_port   = 0
     to_port     = 0
@@ -253,6 +246,15 @@ resource "aws_security_group" "sg_rds" {
   }
 
   tags = { Name = "SG-RDS-EscolarOnline" }
+}
+
+resource "aws_security_group_rule" "rds_from_sg_eks" {
+  type                     = "ingress"
+  from_port                = 3306
+  to_port                  = 3306
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.sg_rds.id
+  source_security_group_id = aws_security_group.sg_eks.id
 }
 
 # Permite a los pods del EKS Managed Node Group conectar a RDS por 3306
