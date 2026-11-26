@@ -35,10 +35,10 @@ output "api_gateway_invoke_url" {
 
 output "s3_frontend_bucket" {
   description = "Nombre del bucket S3 del frontend"
-  value       = aws_s3_bucket.frontend.bucket
+  value       = "escolaronline-frontend-${local.account_id}"
 }
 
 output "s3_website_url" {
   description = "URL pública del S3 Static Website"
-  value       = "http://${aws_s3_bucket_website_configuration.frontend.website_endpoint}"
+  value       = "http://escolaronline-frontend-${local.account_id}.s3-website-${var.aws_region}.amazonaws.com"
 }

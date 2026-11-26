@@ -44,7 +44,7 @@ variable "lambda_runtime" {
 variable "alb_dns_placeholder" {
   description = "DNS temporal para crear API Gateway antes del despliegue de EKS (el script lo actualiza)"
   type        = string
-  default     = "placeholder.escolaronline.local"
+  default     = "example.com"
 }
 
 variable "academy_access_key" {

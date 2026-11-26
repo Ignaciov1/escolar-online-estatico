@@ -242,6 +242,32 @@ window.APP_CONFIG = {
 };
 EOF
 
+if ! aws s3api head-bucket --bucket "${S3_BUCKET}" --region "$REGION" 2>/dev/null; then
+    if [[ "$REGION" == "us-east-1" ]]; then
+        aws s3api create-bucket --bucket "${S3_BUCKET}" --region "$REGION" > /dev/null
+    else
+        aws s3api create-bucket --bucket "${S3_BUCKET}" --region "$REGION" --create-bucket-configuration "LocationConstraint=${REGION}" > /dev/null
+    fi
+fi
+aws s3api put-public-access-block --bucket "${S3_BUCKET}" --region "$REGION" \
+  --public-access-block-configuration "BlockPublicAcls=false,IgnorePublicAcls=false,BlockPublicPolicy=false,RestrictPublicBuckets=false"
+aws s3 website "s3://${S3_BUCKET}/" --index-document index.html --region "$REGION"
+cat <<EOF > /tmp/s3-bucket-policy.json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "PublicReadGetObject",
+      "Effect": "Allow",
+      "Principal": "*",
+      "Action": "s3:GetObject",
+      "Resource": "arn:aws:s3:::${S3_BUCKET}/*"
+    }
+  ]
+}
+EOF
+aws s3api put-bucket-policy --bucket "${S3_BUCKET}" --region "$REGION" --policy file:///tmp/s3-bucket-policy.json
+
 aws s3 sync "$REPO_DIR/S3Frontend/" "s3://${S3_BUCKET}/" --delete --region "$REGION" > /dev/null
 S3_WEBSITE_URL="http://${S3_BUCKET}.s3-website-${REGION}.amazonaws.com"
 
