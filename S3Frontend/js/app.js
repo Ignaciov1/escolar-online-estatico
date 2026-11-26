@@ -89,7 +89,7 @@ async function crearOrden() {
         if (!response.ok) throw new Error(data.error);
         mostrarMensaje('Su pedido fue procesado - Orden: ' + data.orderId + ' - Total: $' + data.total.toLocaleString('es-CL'), 'exito');
         verCarrito();
-        setTimeout(verCarrito, 3000);
+        setTimeout(() => { verCarrito(); if (typeof cargarProductos === 'function') cargarProductos(); }, 3000);
     } catch (error) { mostrarMensaje('Error orden: ' + error.message, 'error'); }
 }
 
