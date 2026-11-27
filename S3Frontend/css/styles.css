@@ -123,3 +123,24 @@ button:hover { opacity: 0.88; }
 .mensaje-error { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
 
 footer { text-align: center; padding: 16px; background: var(--navy); color: #e2e8f0; margin-top: 32px; font-size: 0.86em; }
+.acciones-cell { white-space: nowrap; }
+.qty-input {
+    width: 58px;
+    padding: 6px 6px;
+    margin-right: 4px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    text-align: center;
+    font-size: 0.9em;
+    font-weight: 600;
+}
+.cart-item-actions { display: flex; align-items: center; gap: 6px; }
+.btn-qty {
+    background: var(--navy);
+    color: white;
+    padding: 4px 10px;
+    font-size: 0.95em;
+    line-height: 1.2;
+}
+.cart-qty { min-width: 26px; text-align: center; font-weight: 700; color: var(--navy); }
+button:disabled { opacity: 0.45; cursor: not-allowed; }
