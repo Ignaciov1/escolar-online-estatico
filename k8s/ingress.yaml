@@ -1,11 +1,9 @@
-# Ingress (ALB) para el CRUD de productos en EKS.
-# Enruta por metodo HTTP y usa /health como health check.
-# Requiere IngressClass "alb" (creada por v3_6_0_ingclass.yaml del AWS Load Balancer Controller).
+# Ingress (ALB) para el CRUD de productos en EKS - CleanMarket Fintech SpA
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: escolaronline-ingress
-  namespace: escolaronline
+  name: cleanmarket-ingress
+  namespace: cleanmarket
   annotations:
     alb.ingress.kubernetes.io/scheme: internet-facing
     alb.ingress.kubernetes.io/target-type: ip
@@ -47,5 +45,3 @@ spec:
             name: get-products
             port:
               number: 3001
-
-# 2026 - Disenador asignatura: Ignacio A. Pastenet M.

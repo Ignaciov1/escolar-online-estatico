@@ -1,10 +1,9 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: escolaronline-config
-  namespace: escolaronline
+  name: cleanmarket-config
+  namespace: cleanmarket
 data:
   DB_HOST: "${RDS_ENDPOINT}"
-  DB_NAME: "escolar_online"
+  DB_NAME: "cleanmarket"
   DB_PORT: "3306"
-# 2026 - Disenador asignatura: Ignacio A. Pastenet M.

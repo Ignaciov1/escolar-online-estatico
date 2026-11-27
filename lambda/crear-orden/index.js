@@ -6,7 +6,7 @@ const dynamoClient = new DynamoDBClient({});
 const docClient = DynamoDBDocumentClient.from(dynamoClient);
 const sqsClient = new SQSClient({});
 
-const TABLE_NAME = process.env.TABLE_NAME || 'carrito-escolaronline';
+const TABLE_NAME = process.env.TABLE_NAME || 'carrito-cleanmarket';
 const QUEUE_URL = process.env.QUEUE_URL;
 
 exports.handler = async (event) => {
@@ -18,7 +18,6 @@ exports.handler = async (event) => {
             return response(400, { error: 'Campo obligatorio: userId' });
         }
 
-        // 1. Leer carrito del usuario desde DynamoDB
         const cartResult = await docClient.send(new QueryCommand({
             TableName: TABLE_NAME,
             KeyConditionExpression: 'userId = :uid',
@@ -31,11 +30,9 @@ exports.handler = async (event) => {
             return response(400, { error: 'El carrito esta vacio', userId });
         }
 
-        // 2. Calcular total
         const total = items.reduce((sum, item) => sum + (item.precio * item.cantidad), 0);
+        const orderId = `CM-${Date.now()}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
 
-        // 3. Crear mensaje de orden
-        const orderId = `ORD-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
         const orderMessage = {
             orderId,
             userId,
@@ -49,7 +46,6 @@ exports.handler = async (event) => {
             createdAt: new Date().toISOString()
         };
 
-        // 4. Publicar en SQS
         await sqsClient.send(new SendMessageCommand({
             QueueUrl: QUEUE_URL,
             MessageBody: JSON.stringify(orderMessage),
@@ -59,13 +55,12 @@ exports.handler = async (event) => {
             }
         }));
 
-        // 5. Responder al cliente inmediatamente
         return response(200, {
-            message: 'Su pedido fue recibido',
+            message: 'Su pedido fue procesado',
             orderId,
             total,
             cantidadItems: items.length,
-            estado: 'pendiente'
+            estado: 'procesado'
         });
 
     } catch (error) {
@@ -86,5 +81,3 @@ function response(statusCode, body) {
         body: JSON.stringify(body)
     };
 }
-
-// 2026 - Disenador asignatura: Ignacio A. Pastenet M.

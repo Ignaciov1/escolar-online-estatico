@@ -1,7 +1,7 @@
 {
-  "name": "escolaronline-crear-orden",
+  "name": "cleanmarket-crear-orden",
   "version": "1.0.0",
-  "description": "Lambda para crear orden (lee DynamoDB, publica en SQS)",
+  "description": "Lambda Create-Order CleanMarket Fintech SpA - Calcula total y publica orden en SQS",
   "main": "index.js",
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.400.0",

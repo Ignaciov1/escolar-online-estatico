@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# --- Colores y Formato ---
 C_BLUE='\e[1;34m'
 C_GREEN='\e[1;32m'
 C_YELLOW='\e[1;33m'
@@ -9,10 +8,9 @@ C_CYAN='\e[1;36m'
 C_RESET='\e[0m'
 
 echo -e "${C_BLUE}========================================================================${C_RESET}"
-echo -e "${C_CYAN}🚀 DESPLIEGUE AUTOMATIZADO ESCOLARONLINE (EKS + SERVERLESS HIBRIDO) 🚀${C_RESET}"
+echo -e "${C_CYAN}DESPLIEGUE AUTOMATIZADO CLEANMARKET FINTECH SPA (EKS + SERVERLESS)${C_RESET}"
 echo -e "${C_BLUE}========================================================================${C_RESET}\n"
 
-# --- 0. Instalación de Dependencias ---
 echo -e "${C_YELLOW}[Paso 0] Verificando e instalando dependencias en Workspace...${C_RESET}"
 sudo apt-get update -y > /dev/null 2>&1
 sudo apt-get install -y docker.io git unzip zip curl mysql-client jq gettext-base nodejs npm > /dev/null 2>&1
@@ -35,24 +33,23 @@ if ! command -v kubectl &> /dev/null; then
     chmod +x /tmp/kubectl
     sudo mv /tmp/kubectl /usr/local/bin/kubectl
 fi
-echo -e "${C_GREEN}✔ Dependencias listas.${C_RESET}\n"
+echo -e "${C_GREEN}[OK] Dependencias listas.${C_RESET}\n"
 
-# --- Variables Dinámicas ---
 REGION="${AWS_REGION:-us-east-1}"
-CLUSTER_NAME="escolaronline-cluster"
-DB_IDENTIFIER="escolaronline-db"
-API_NAME="escolaronline-api"
+CLUSTER_NAME="cleanmarket-cluster"
+DB_IDENTIFIER="cleanmarket-db"
+API_NAME="cleanmarket-api"
+NAMESPACE="cleanmarket"
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-S3_BUCKET="escolaronline-frontend-${ACCOUNT_ID}"
+S3_BUCKET="cleanmarket-frontend-${ACCOUNT_ID}"
 
 export AWS_REGION="$REGION"
 export ACCOUNT_ID
 
-echo -e "   ${C_CYAN}-> Cuenta AWS: ${C_RESET}${ACCOUNT_ID} | ${C_CYAN}Región: ${C_RESET}${REGION}"
+echo -e "   ${C_CYAN}-> Cuenta AWS: ${C_RESET}${ACCOUNT_ID} | ${C_CYAN}Region: ${C_RESET}${REGION}"
 
-# --- 1. Conexión EKS y Base de Datos RDS ---
-echo -e "\n${C_YELLOW}[Paso 1] Conectando a EKS y poblando RDS MySQL (productos + ordenes)...${C_RESET}"
+echo -e "\n${C_YELLOW}[Paso 1] Conectando a EKS y poblando RDS MySQL (productos + clientes + ordenes)...${C_RESET}"
 aws eks update-kubeconfig --region "$REGION" --name "$CLUSTER_NAME" > /dev/null 2>&1
 sudo cp -r ~/.aws /root/ 2>/dev/null || true
 
@@ -67,24 +64,22 @@ export RDS_ENDPOINT
 
 echo -e "   ${C_CYAN}-> RDS Endpoint: ${C_RESET}${RDS_ENDPOINT}"
 mysql -h "$RDS_ENDPOINT" -u alumno -palumno123 < "$REPO_DIR/init.sql"
-echo -e "${C_GREEN}✔ Base de datos escolar_online (productos + ordenes) lista.${C_RESET}\n"
+echo -e "${C_GREEN}[OK] Base de datos cleanmarket (productos + clientes + ordenes) lista.${C_RESET}\n"
 
-# --- 2. Build y Push de los 4 Microservicios Backend a ECR ---
 echo -e "${C_YELLOW}[Paso 2] Compilando y subiendo 4 microservicios CRUD a ECR...${C_RESET}"
 aws ecr get-login-password --region "$REGION" | sudo docker login --username AWS --password-stdin "${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com" > /dev/null 2>&1
 
 SERVICES=("get-products" "create-product" "update-product" "delete-product")
 for SVC in "${SERVICES[@]}"; do
-    REPO="escolaronline-${SVC}"
+    REPO="cleanmarket-${SVC}"
     echo -e "   ${C_CYAN}-> Build & Push ${REPO}...${C_RESET}"
     aws ecr create-repository --repository-name "$REPO" --region "$REGION" > /dev/null 2>&1 || true
     sudo docker build --network host --platform linux/arm64 -t "$REPO" "$REPO_DIR/microserviciosEKSBackend/$SVC" > /dev/null
     sudo docker tag "${REPO}:latest" "${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com/${REPO}:latest"
     sudo docker push "${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com/${REPO}:latest" > /dev/null
 done
-echo -e "${C_GREEN}✔ 4 imágenes alojadas en ECR.${C_RESET}\n"
+echo -e "${C_GREEN}[OK] 4 imagenes alojadas en ECR.${C_RESET}\n"
 
-# --- 3. Metrics Server y CloudWatch Container Insights (Enhanced) ---
 echo -e "${C_YELLOW}[Paso 3] Habilitando Metrics Server y CloudWatch Container Insights...${C_RESET}"
 aws eks update-cluster-config --name "$CLUSTER_NAME" --region "$REGION" \
   --logging '{"clusterLogging":[{"types":["api","audit","authenticator","controllerManager","scheduler"],"enabled":true}]}' > /dev/null 2>&1 || true
@@ -130,9 +125,8 @@ EOF
 kubectl set image daemonset/cloudwatch-agent cloudwatch-agent=public.ecr.aws/cloudwatch-agent/cloudwatch-agent:latest -n amazon-cloudwatch > /dev/null 2>&1 || true
 kubectl rollout restart daemonset/cloudwatch-agent -n amazon-cloudwatch > /dev/null 2>&1 || true
 kubectl rollout status daemonset/cloudwatch-agent -n amazon-cloudwatch --timeout=90s > /dev/null 2>&1 || true
-echo -e "${C_GREEN}✔ Metrics Server y Container Insights activos.${C_RESET}\n"
+echo -e "${C_GREEN}[OK] Metrics Server y Container Insights activos.${C_RESET}\n"
 
-# --- 4. Renderizar y Desplegar Manifiestos Kubernetes (4 Pods + 4 HPAs) ---
 echo -e "${C_YELLOW}[Paso 4] Renderizando y aplicando manifiestos en EKS...${C_RESET}"
 mkdir -p "$REPO_DIR/k8s/rendered"
 envsubst '${RDS_ENDPOINT}' < "$REPO_DIR/k8s/configmap.yaml" > "$REPO_DIR/k8s/rendered/configmap.yaml"
@@ -145,11 +139,10 @@ kubectl apply -f "$REPO_DIR/k8s/rendered/deployments.yaml" > /dev/null
 
 echo -e "   ${C_CYAN}-> Esperando rollout de los 4 microservicios CRUD...${C_RESET}"
 for SVC in "${SERVICES[@]}"; do
-    kubectl rollout status "deployment/${SVC}" -n escolaronline --timeout=150s > /dev/null
+    kubectl rollout status "deployment/${SVC}" -n "$NAMESPACE" --timeout=150s > /dev/null
 done
-echo -e "${C_GREEN}✔ 4 microservicios CRUD y 4 HPAs activos en namespace escolaronline.${C_RESET}\n"
+echo -e "${C_GREEN}[OK] 4 microservicios CRUD y 4 HPAs activos en namespace ${NAMESPACE}.${C_RESET}\n"
 
-# --- 5. AWS Load Balancer Controller + IngressClass + ALB Ingress ---
 echo -e "${C_YELLOW}[Paso 5] Instalando ALB Controller y aprovisionando Ingress...${C_RESET}"
 kubectl apply --validate=false -f https://github.com/cert-manager/cert-manager/releases/download/v1.13.5/cert-manager.yaml > /dev/null 2>&1 || true
 kubectl rollout status deployment cert-manager -n cert-manager --timeout=120s > /dev/null
@@ -186,10 +179,10 @@ for i in {1..5}; do
     sleep 10
 done
 
-echo -e "   ${C_CYAN}-> Esperando DNS público del ALB...${C_RESET}"
+echo -e "   ${C_CYAN}-> Esperando DNS publico del ALB...${C_RESET}"
 ALB_DNS=""
 for i in {1..30}; do
-    ALB_DNS=$(kubectl get ingress escolaronline-ingress -n escolaronline -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null || true)
+    ALB_DNS=$(kubectl get ingress cleanmarket-ingress -n "$NAMESPACE" -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null || true)
     if [[ -n "$ALB_DNS" ]]; then
         break
     fi
@@ -201,10 +194,9 @@ if [[ -z "$ALB_DNS" ]]; then
     exit 1
 fi
 echo -e "   ${C_CYAN}-> ALB DNS: ${C_RESET}${ALB_DNS}"
-echo -e "${C_GREEN}✔ Ingress y ALB aprovisionados.${C_RESET}\n"
+echo -e "${C_GREEN}[OK] Ingress y ALB aprovisionados.${C_RESET}\n"
 
-# --- 6. Empaquetar y actualizar Lambda procesar-orden (con mysql2) ---
-echo -e "${C_YELLOW}[Paso 6] Empaquetando Lambda procesar-orden con mysql2...${C_RESET}"
+echo -e "${C_YELLOW}[Paso 6] Empaquetando Lambda cleanmarket-procesar-orden con mysql2...${C_RESET}"
 (
     cd "$REPO_DIR/lambda/procesar-orden"
     npm install --omit=dev --silent > /dev/null 2>&1
@@ -213,12 +205,11 @@ echo -e "${C_YELLOW}[Paso 6] Empaquetando Lambda procesar-orden con mysql2...${C
 )
 aws lambda update-function-code \
   --region "$REGION" \
-  --function-name escolaronline-procesar-orden \
+  --function-name cleanmarket-procesar-orden \
   --zip-file "fileb://${REPO_DIR}/lambda/procesar-orden.zip" > /dev/null
-aws lambda wait function-updated --region "$REGION" --function-name escolaronline-procesar-orden
-echo -e "${C_GREEN}✔ Lambda procesar-orden actualizada con mysql2.${C_RESET}\n"
+aws lambda wait function-updated --region "$REGION" --function-name cleanmarket-procesar-orden
+echo -e "${C_GREEN}[OK] Lambda cleanmarket-procesar-orden actualizada con mysql2.${C_RESET}\n"
 
-# --- 7. Conectar API Gateway al ALB real y subir Frontend a S3 ---
 echo -e "${C_YELLOW}[Paso 7] Conectando API Gateway al ALB y desplegando Frontend en S3...${C_RESET}"
 API_ID=$(aws apigateway get-rest-apis --region "$REGION" --query "items[?name=='${API_NAME}'].id | [0]" --output text)
 PROD_RES_ID=$(aws apigateway get-resources --region "$REGION" --rest-api-id "$API_ID" --query "items[?path=='/api/products'].id | [0]" --output text)
@@ -271,11 +262,10 @@ aws s3api put-bucket-policy --bucket "${S3_BUCKET}" --region "$REGION" --policy 
 aws s3 sync "$REPO_DIR/S3Frontend/" "s3://${S3_BUCKET}/" --delete --region "$REGION" > /dev/null
 S3_WEBSITE_URL="http://${S3_BUCKET}.s3-website-${REGION}.amazonaws.com"
 
-echo -e "${C_GREEN}✔ API Gateway desplegado y Frontend sincronizado en S3.${C_RESET}\n"
+echo -e "${C_GREEN}[OK] API Gateway desplegado y Frontend sincronizado en S3.${C_RESET}\n"
 
-# --- Resumen Final ---
 echo -e "${C_BLUE}========================================================================${C_RESET}"
-echo -e "${C_CYAN}🎉 DESPLIEGUE COMPLETO FINALIZADO CON ÉXITO 🎉${C_RESET}"
+echo -e "${C_CYAN}DESPLIEGUE CLEANMARKET FINTECH SPA FINALIZADO CON EXITO${C_RESET}"
 echo -e "${C_YELLOW}Frontend S3 URL :${C_RESET} ${S3_WEBSITE_URL}"
 echo -e "${C_YELLOW}API Gateway URL :${C_RESET} ${API_URL}"
 echo -e "${C_YELLOW}ALB EKS DNS     :${C_RESET} http://${ALB_DNS}"

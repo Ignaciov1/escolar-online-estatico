@@ -3,47 +3,105 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EscolarOnline - Catalogo + Carrito + Ordenes</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27><text y=%27.9em%27 font-size=%2790%27>&#x1F4DA;</text></svg>">
+    <title>CleanMarket Fintech SpA - Plataforma E-Commerce Cloud</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27><text y=%27.9em%27 font-size=%2790%27>&#x2728;</text></svg>">
     <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
     <header>
-        <h1>EscolarOnline</h1>
-        <p>Catalogo + Carrito + Ordenes - Arquitectura Hibrida Serverless - ACT3.3</p>
+        <div class="header-inner">
+            <h1>CleanMarket Fintech SpA</h1>
+            <p>Soluciones de Higiene y Limpieza para Hogares, Oficinas e Industrias</p>
+            <span class="arch-badge">Arquitectura Cloud Hibrida AWS &middot; EKS + Serverless + Multi-AZ</span>
+        </div>
     </header>
+
     <main>
         <section id="productos-section">
-            <h2>Catalogo de Productos</h2>
-            <button id="btn-cargar" onclick="cargarProductos()">Cargar productos</button>
-            <table id="tabla-productos">
-                <thead><tr><th>ID</th><th>Nombre</th><th>Descripcion</th><th>Precio</th><th>Stock</th><th>Categoria</th><th>Acciones</th></tr></thead>
-                <tbody id="productos-body"></tbody>
-            </table>
+            <div class="section-header">
+                <h2>Catalogo de Productos de Higiene y Limpieza</h2>
+                <button id="btn-cargar" onclick="cargarProductos()">Actualizar Catalogo</button>
+            </div>
+            <div class="table-wrapper">
+                <table id="tabla-productos">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Producto</th>
+                            <th>Descripcion</th>
+                            <th>Precio</th>
+                            <th>Stock</th>
+                            <th>Segmento / Categoria</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="productos-body"></tbody>
+                </table>
+            </div>
         </section>
+
         <section id="carrito-section">
-            <h2>Carrito de Compras</h2>
-            <button onclick="verCarrito()">Ver Carrito</button>
-            <div id="carrito-contenido"><p>Carrito vacio</p></div>
+            <div class="section-header">
+                <h2>Carrito de Compras (DynamoDB TTL)</h2>
+                <div class="cliente-bar">
+                    <label for="cliente-select">Cliente activo:</label>
+                    <select id="cliente-select" onchange="cambiarCliente()">
+                        <option value="cli-hogar-01">Camila Rojas (Hogar)</option>
+                        <option value="cli-oficina-01">Servicios Corporativos Centro Ltda. (Oficina)</option>
+                        <option value="cli-industria-01">Planta Alimentaria Sur S.A. (Industria)</option>
+                    </select>
+                    <button class="btn-secundario" onclick="verCarrito()">Ver Carrito</button>
+                </div>
+            </div>
+            <div id="carrito-contenido"><p class="empty-state">Carrito vacio. Selecciona productos del catalogo para iniciar una orden.</p></div>
         </section>
+
         <section id="formulario-section">
-            <h2 id="form-titulo">Nuevo Producto</h2>
+            <h2 id="form-titulo">Nuevo Producto de Limpieza</h2>
             <form id="producto-form" onsubmit="guardarProducto(event)">
                 <input type="hidden" id="producto-id">
-                <div class="form-group"><label for="nombre">Nombre:</label><input type="text" id="nombre" required></div>
-                <div class="form-group"><label for="descripcion">Descripcion:</label><textarea id="descripcion" rows="2"></textarea></div>
-                <div class="form-group"><label for="precio">Precio ($):</label><input type="number" id="precio" min="1" step="10" required></div>
-                <div class="form-group"><label for="stock">Stock:</label><input type="number" id="stock" min="0" required></div>
-                <div class="form-group"><label for="categoria">Categoria:</label><input type="text" id="categoria"></div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="nombre">Nombre del producto:</label>
+                        <input type="text" id="nombre" placeholder="Ej: Desinfectante Multiuso 5L" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="categoria">Segmento / Categoria:</label>
+                        <input type="text" id="categoria" list="categorias-sugeridas" placeholder="Hogar, Oficina o Industria">
+                        <datalist id="categorias-sugeridas">
+                            <option value="Hogar"></option>
+                            <option value="Oficina"></option>
+                            <option value="Industria"></option>
+                            <option value="Desinfeccion"></option>
+                            <option value="Higiene Personal"></option>
+                        </datalist>
+                    </div>
+                    <div class="form-group">
+                        <label for="precio">Precio (CLP $):</label>
+                        <input type="number" id="precio" min="1" step="10" placeholder="9990" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="stock">Stock disponible:</label>
+                        <input type="number" id="stock" min="0" placeholder="100" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="descripcion">Descripcion:</label>
+                    <textarea id="descripcion" rows="2" placeholder="Detalle tecnico y uso recomendado..."></textarea>
+                </div>
                 <div class="form-actions">
-                    <button type="submit" id="btn-guardar">Guardar</button>
-                    <button type="button" onclick="cancelarEdicion()">Cancelar</button>
+                    <button type="submit" id="btn-guardar">Guardar Producto</button>
+                    <button type="button" class="btn-cancelar" onclick="cancelarEdicion()">Cancelar</button>
                 </div>
             </form>
             <p id="mensaje"></p>
         </section>
     </main>
-    <footer><p>EscolarOnline - ACT3.3 ARY1102 Arquitectura Cloud - DuocUC 2026 | Dise&#241;ador asignatura: Ignacio A. Pastenet M.</p></footer>
+
+    <footer>
+        <p>CleanMarket Fintech SpA &middot; Evaluacion Final Transversal (EFT) ARY1102 Arquitectura Cloud &middot; Duoc UC</p>
+    </footer>
+
     <script src="js/config.js"></script>
     <script src="js/app.js"></script>
 </body>

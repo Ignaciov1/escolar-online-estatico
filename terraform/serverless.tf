@@ -2,7 +2,7 @@
 # 7. DYNAMODB (CARRITO CON TTL)
 # ==========================================
 resource "aws_dynamodb_table" "carrito" {
-  name         = "carrito-escolaronline"
+  name         = "carrito-cleanmarket"
   billing_mode = "PAY_PER_REQUEST"
   hash_key     = "userId"
   range_key    = "productId"
@@ -22,20 +22,20 @@ resource "aws_dynamodb_table" "carrito" {
     enabled        = true
   }
 
-  tags = { Name = "carrito-escolaronline" }
+  tags = { Name = "carrito-cleanmarket" }
 }
 
 # ==========================================
 # 8. SQS (COLA PRINCIPAL + DLQ)
 # ==========================================
 resource "aws_sqs_queue" "ordenes_dlq" {
-  name                      = "ordenes-escolaronline-dlq"
+  name                      = "ordenes-cleanmarket-dlq"
   message_retention_seconds = 345600
-  tags                      = { Name = "ordenes-escolaronline-dlq" }
+  tags                      = { Name = "ordenes-cleanmarket-dlq" }
 }
 
 resource "aws_sqs_queue" "ordenes" {
-  name                       = "ordenes-escolaronline"
+  name                       = "ordenes-cleanmarket"
   visibility_timeout_seconds = 60
   message_retention_seconds  = 345600
   delay_seconds              = 0
@@ -45,11 +45,11 @@ resource "aws_sqs_queue" "ordenes" {
     maxReceiveCount     = 3
   })
 
-  tags = { Name = "ordenes-escolaronline" }
+  tags = { Name = "ordenes-cleanmarket" }
 }
 
 # ==========================================
-# 9. FUNCIONES LAMBDA (3) + TRIGGER SQS
+# 9. FUNCIONES LAMBDA (3) + CONCURRENCIA + TRIGGER SQS
 # ==========================================
 data "archive_file" "procesar_carrito" {
   type        = "zip"
@@ -71,15 +71,17 @@ data "archive_file" "procesar_orden_bootstrap" {
 }
 
 resource "aws_lambda_function" "procesar_carrito" {
-  function_name    = "escolaronline-procesar-carrito"
-  role             = local.lab_role_arn
-  handler          = "index.handler"
-  runtime          = var.lambda_runtime
-  architectures    = ["arm64"]
-  memory_size      = 128
-  timeout          = 30
-  filename         = data.archive_file.procesar_carrito.output_path
-  source_code_hash = data.archive_file.procesar_carrito.output_base64sha256
+  function_name                  = "cleanmarket-procesar-carrito"
+  description                    = "Lambda Cart CleanMarket: CRUD carrito de compras en DynamoDB con TTL"
+  role                           = local.lab_role_arn
+  handler                        = "index.handler"
+  runtime                        = var.lambda_runtime
+  architectures                  = ["arm64"]
+  memory_size                    = 128
+  timeout                        = 30
+  reserved_concurrent_executions = var.lambda_reserved_concurrency
+  filename                       = data.archive_file.procesar_carrito.output_path
+  source_code_hash               = data.archive_file.procesar_carrito.output_base64sha256
 
   environment {
     variables = {
@@ -89,15 +91,17 @@ resource "aws_lambda_function" "procesar_carrito" {
 }
 
 resource "aws_lambda_function" "crear_orden" {
-  function_name    = "escolaronline-crear-orden"
-  role             = local.lab_role_arn
-  handler          = "index.handler"
-  runtime          = var.lambda_runtime
-  architectures    = ["arm64"]
-  memory_size      = 128
-  timeout          = 30
-  filename         = data.archive_file.crear_orden.output_path
-  source_code_hash = data.archive_file.crear_orden.output_base64sha256
+  function_name                  = "cleanmarket-crear-orden"
+  description                    = "Lambda Create-Order CleanMarket: calcula total desde DynamoDB y publica orden en SQS"
+  role                           = local.lab_role_arn
+  handler                        = "index.handler"
+  runtime                        = var.lambda_runtime
+  architectures                  = ["arm64"]
+  memory_size                    = 128
+  timeout                        = 30
+  reserved_concurrent_executions = var.lambda_reserved_concurrency
+  filename                       = data.archive_file.crear_orden.output_path
+  source_code_hash               = data.archive_file.crear_orden.output_base64sha256
 
   environment {
     variables = {
@@ -108,15 +112,17 @@ resource "aws_lambda_function" "crear_orden" {
 }
 
 resource "aws_lambda_function" "procesar_orden" {
-  function_name    = "escolaronline-procesar-orden"
-  role             = local.lab_role_arn
-  handler          = "index.handler"
-  runtime          = var.lambda_runtime
-  architectures    = ["arm64"]
-  memory_size      = 256
-  timeout          = 60
-  filename         = data.archive_file.procesar_orden_bootstrap.output_path
-  source_code_hash = data.archive_file.procesar_orden_bootstrap.output_base64sha256
+  function_name                  = "cleanmarket-procesar-orden"
+  description                    = "Lambda Process-Order CleanMarket: consume SQS, persiste orden en RDS MySQL y descuenta stock"
+  role                           = local.lab_role_arn
+  handler                        = "index.handler"
+  runtime                        = var.lambda_runtime
+  architectures                  = ["arm64"]
+  memory_size                    = 256
+  timeout                        = 60
+  reserved_concurrent_executions = var.lambda_reserved_concurrency
+  filename                       = data.archive_file.procesar_orden_bootstrap.output_path
+  source_code_hash               = data.archive_file.procesar_orden_bootstrap.output_base64sha256
 
   vpc_config {
     subnet_ids         = [aws_subnet.priv_app_1a.id, aws_subnet.priv_app_1b.id]
@@ -125,7 +131,7 @@ resource "aws_lambda_function" "procesar_orden" {
 
   environment {
     variables = {
-      DB_HOST    = aws_db_instance.escolaronline_db.address
+      DB_HOST    = aws_db_instance.cleanmarket_db.address
       DB_USER    = var.db_user
       DB_PASS    = var.db_password
       DB_NAME    = var.db_name
@@ -143,14 +149,18 @@ resource "aws_lambda_event_source_mapping" "sqs_procesar_orden" {
   event_source_arn = aws_sqs_queue.ordenes.arn
   function_name    = aws_lambda_function.procesar_orden.arn
   batch_size       = 1
+
+  scaling_config {
+    maximum_concurrency = var.sqs_max_concurrency
+  }
 }
 
 # ==========================================
-# 11. API GATEWAY REST (8 RUTAS + CORS + PROD)
+# 10. API GATEWAY REST (8 RUTAS + CORS + THROTTLING + PROD)
 # ==========================================
 resource "aws_api_gateway_rest_api" "api" {
-  name        = "escolaronline-api"
-  description = "API Hibrida EscolarOnline (EKS + Serverless)"
+  name        = "cleanmarket-api"
+  description = "API Hibrida CleanMarket Fintech SpA (EKS + Serverless)"
 
   endpoint_configuration {
     types = ["REGIONAL"]
@@ -424,7 +434,7 @@ resource "aws_api_gateway_gateway_response" "cors_5xx" {
   }
 }
 
-# --- Deployment y Stage prod ---
+# --- Deployment, Stage prod y Throttling ---
 resource "aws_api_gateway_deployment" "prod" {
   rest_api_id = aws_api_gateway_rest_api.api.id
 
@@ -449,4 +459,118 @@ resource "aws_api_gateway_stage" "prod" {
   deployment_id = aws_api_gateway_deployment.prod.id
   rest_api_id   = aws_api_gateway_rest_api.api.id
   stage_name    = "prod"
+}
+
+resource "aws_api_gateway_method_settings" "prod_throttling" {
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  stage_name  = aws_api_gateway_stage.prod.stage_name
+  method_path = "*/*"
+
+  settings {
+    throttling_burst_limit = 100
+    throttling_rate_limit  = 50
+  }
+}
+
+# ==========================================
+# 11. OBSERVABILIDAD (CLOUDWATCH DASHBOARD)
+# ==========================================
+resource "aws_cloudwatch_dashboard" "cleanmarket_ops" {
+  dashboard_name = "CleanMarket-Observabilidad"
+
+  dashboard_body = jsonencode({
+    widgets = [
+      {
+        type   = "metric"
+        x      = 0
+        y      = 0
+        width  = 12
+        height = 6
+        properties = {
+          title  = "AWS Lambda - Invocaciones y Errores"
+          region = var.aws_region
+          stat   = "Sum"
+          period = 60
+          metrics = [
+            ["AWS/Lambda", "Invocations", "FunctionName", aws_lambda_function.procesar_carrito.function_name],
+            [".", "Invocations", ".", aws_lambda_function.crear_orden.function_name],
+            [".", "Invocations", ".", aws_lambda_function.procesar_orden.function_name],
+            [".", "Errors", ".", aws_lambda_function.procesar_orden.function_name]
+          ]
+        }
+      },
+      {
+        type   = "metric"
+        x      = 12
+        y      = 0
+        width  = 12
+        height = 6
+        properties = {
+          title  = "AWS Lambda - Concurrencia Activa (Limites configurados)"
+          region = var.aws_region
+          stat   = "Maximum"
+          period = 60
+          metrics = [
+            ["AWS/Lambda", "ConcurrentExecutions", "FunctionName", aws_lambda_function.procesar_carrito.function_name],
+            [".", "ConcurrentExecutions", ".", aws_lambda_function.crear_orden.function_name],
+            [".", "ConcurrentExecutions", ".", aws_lambda_function.procesar_orden.function_name]
+          ]
+        }
+      },
+      {
+        type   = "metric"
+        x      = 0
+        y      = 6
+        width  = 12
+        height = 6
+        properties = {
+          title  = "Amazon SQS & DLQ - Flujo de Ordenes"
+          region = var.aws_region
+          stat   = "Sum"
+          period = 60
+          metrics = [
+            ["AWS/SQS", "NumberOfMessagesSent", "QueueName", aws_sqs_queue.ordenes.name],
+            [".", "ApproximateNumberOfMessagesVisible", ".", aws_sqs_queue.ordenes.name, { stat = "Maximum" }],
+            [".", "ApproximateNumberOfMessagesVisible", ".", aws_sqs_queue.ordenes_dlq.name, { stat = "Maximum" }]
+          ]
+        }
+      },
+      {
+        type   = "metric"
+        x      = 12
+        y      = 6
+        width  = 12
+        height = 6
+        properties = {
+          title  = "Amazon RDS MySQL Multi-AZ - CPU y Conexiones"
+          region = var.aws_region
+          stat   = "Average"
+          period = 60
+          metrics = [
+            ["AWS/RDS", "CPUUtilization", "DBInstanceIdentifier", aws_db_instance.cleanmarket_db.identifier],
+            [".", "DatabaseConnections", ".", aws_db_instance.cleanmarket_db.identifier]
+          ]
+        }
+      },
+      {
+        type   = "metric"
+        x      = 0
+        y      = 12
+        width  = 24
+        height = 6
+        properties = {
+          title  = "Amazon API Gateway - Trafico, Latencia y Errores"
+          region = var.aws_region
+          stat   = "Sum"
+          period = 60
+          metrics = [
+            ["AWS/ApiGateway", "Count", "ApiName", aws_api_gateway_rest_api.api.name],
+            [".", "4XXError", ".", aws_api_gateway_rest_api.api.name],
+            [".", "5XXError", ".", aws_api_gateway_rest_api.api.name],
+            [".", "Latency", ".", aws_api_gateway_rest_api.api.name, { stat = "Average" }]
+          ]
+        }
+      }
+    ]
+  })
 }

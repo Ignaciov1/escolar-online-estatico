@@ -1,27 +1,22 @@
 -- ============================================
--- EscolarOnline - Base de Datos Extendida (EA3)
--- Actividad 3.3 - Arquitectura Cloud ARY1102
+-- CleanMarket Fintech SpA - Base de Datos RDS MySQL
+-- Evaluacion Final Transversal - Arquitectura Cloud ARY1102
 -- ============================================
--- Ejecutar en RDS MySQL
--- Agrega tabla ordenes sobre el schema existente de EA2
 
-CREATE DATABASE IF NOT EXISTS escolar_online;
-USE escolar_online;
+CREATE DATABASE IF NOT EXISTS cleanmarket;
+USE cleanmarket;
 
--- Tabla de ordenes (nueva en EA3)
-CREATE TABLE IF NOT EXISTS ordenes (
+-- Tabla de clientes (segmentos Hogar, Oficina e Industria)
+CREATE TABLE IF NOT EXISTS clientes (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id VARCHAR(100) NOT NULL,
-    total DECIMAL(10,2) NOT NULL,
-    estado ENUM('pendiente', 'procesado', 'enviado', 'entregado') DEFAULT 'pendiente',
-    items JSON,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    processed_at TIMESTAMP NULL,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    user_id VARCHAR(100) NOT NULL UNIQUE,
+    nombre VARCHAR(200) NOT NULL,
+    email VARCHAR(200) NOT NULL,
+    segmento ENUM('Hogar', 'Oficina', 'Industria') NOT NULL DEFAULT 'Hogar',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Verificar que tabla productos existe (de EA2)
--- Si no existe, crearla con datos de prueba
+-- Tabla de productos de higiene y limpieza
 CREATE TABLE IF NOT EXISTS productos (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nombre VARCHAR(255) NOT NULL,
@@ -34,18 +29,30 @@ CREATE TABLE IF NOT EXISTS productos (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
--- Insertar productos solo si la tabla esta vacia
-INSERT INTO productos (nombre, descripcion, precio, stock, categoria)
-SELECT * FROM (
-    SELECT 'Cuaderno universitario 100 hojas' as nombre, 'Cuaderno matematicas cuadro grande, tapa dura' as descripcion, 2990.00 as precio, 150 as stock, 'Cuadernos' as categoria
-) AS tmp
-WHERE NOT EXISTS (SELECT 1 FROM productos LIMIT 1);
+-- Tabla de ordenes procesadas de forma asincrona desde SQS
+CREATE TABLE IF NOT EXISTS ordenes (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id VARCHAR(100) NOT NULL,
+    total DECIMAL(10,2) NOT NULL,
+    estado ENUM('pendiente', 'procesado', 'enviado', 'entregado') DEFAULT 'pendiente',
+    items JSON,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    processed_at TIMESTAMP NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_ordenes_user_id (user_id)
+);
 
--- Si la tabla estaba vacia, insertar el resto
+-- Carga inicial idempotente de clientes
+INSERT IGNORE INTO clientes (id, user_id, nombre, email, segmento) VALUES
+(1, 'cli-hogar-01', 'Camila Rojas', 'camila.rojas@hogar.cl', 'Hogar'),
+(2, 'cli-oficina-01', 'Servicios Corporativos Centro Ltda.', 'compras@oficinacentro.cl', 'Oficina'),
+(3, 'cli-industria-01', 'Planta Alimentaria Sur S.A.', 'abastecimiento@plantasur.cl', 'Industria');
+
+-- Carga inicial idempotente de catalogo de higiene y limpieza
 INSERT IGNORE INTO productos (id, nombre, descripcion, precio, stock, categoria) VALUES
-(2, 'Mochila escolar reforzada', 'Mochila con compartimentos, resistente al agua', 24990.00, 45, 'Mochilas'),
-(3, 'Set 12 lapices de colores', 'Lapices profesionales, mina suave, 12 unidades', 4990.00, 200, 'Lapices'),
-(4, 'Calculadora cientifica', 'Calculadora 240 funciones, pantalla LCD', 12990.00, 60, 'Tecnologia'),
-(5, 'Estuche escolar doble cierre', 'Estuche amplio con doble compartimento', 6990.00, 80, 'Estuches');
-
--- 2026 - Disenador asignatura: Ignacio A. Pastenet M.
+(1, 'Detergente Liquido Concentrado 5L', 'Detergente enzimatico biodegradable de alto rendimiento para ropa y textiles', 12990.00, 120, 'Hogar'),
+(2, 'Desinfectante Amonio Cuaternario 5L', 'Desinfectante bactericida y virucida grado profesional para pisos y superficies', 15490.00, 85, 'Industria'),
+(3, 'Cloro Gel Concentrado 2L', 'Limpiador blanqueador en gel antisalpicaduras para banos y cocinas', 3490.00, 200, 'Hogar'),
+(4, 'Jabon Liquido Antibacterial 5L', 'Bidon recarga de jabon neutro con glicerina para dispensadores corporativos', 9990.00, 95, 'Oficina'),
+(5, 'Papel Higienico Institucional Pack x12', 'Rollos jumbo doble hoja de 300 metros para oficinas y alto flujo', 18990.00, 70, 'Oficina'),
+(6, 'Alcohol Gel Higienizante 70% 1L', 'Gel sanitizante de manos sin enjuague con valvula dosificadora', 4990.00, 150, 'Industria');

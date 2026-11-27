@@ -15,4 +15,13 @@ terraform {
 
 provider "aws" {
   region = var.aws_region
+
+  default_tags {
+    tags = {
+      Project     = "CleanMarket-Fintech-SpA"
+      Environment = "Produccion"
+      ManagedBy   = "Terraform"
+      Course      = "ARY1102-EFT"
+    }
+  }
 }

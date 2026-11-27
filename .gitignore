@@ -1,5 +1,7 @@
 # Archivos temporales y dependencias
 contenido_repo.txt
+codigo_proyecto.txt
+migrar-cleanmarket.ps1
 **/node_modules/
 lambda/*.zip
 

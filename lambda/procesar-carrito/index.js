@@ -4,14 +4,12 @@ const { DynamoDBDocumentClient, PutCommand, QueryCommand, DeleteCommand } = requ
 const client = new DynamoDBClient({});
 const docClient = DynamoDBDocumentClient.from(client);
 
-const TABLE_NAME = process.env.TABLE_NAME || 'carrito-escolaronline';
+const TABLE_NAME = process.env.TABLE_NAME || 'carrito-cleanmarket';
 
 exports.handler = async (event) => {
     const method = event.httpMethod || event.requestContext?.http?.method;
-    const path = event.path || event.rawPath;
 
     try {
-        // POST /api/cart - Agregar item al carrito
         if (method === 'POST') {
             const body = JSON.parse(event.body);
             const { userId, productId, nombre, precio, cantidad } = body;
@@ -20,7 +18,7 @@ exports.handler = async (event) => {
                 return response(400, { error: 'Campos obligatorios: userId, productId, nombre, precio, cantidad' });
             }
 
-            const expiresAt = Math.floor(Date.now() / 1000) + 86400; // 24 horas
+            const expiresAt = Math.floor(Date.now() / 1000) + 86400; // TTL 24 horas
 
             await docClient.send(new PutCommand({
                 TableName: TABLE_NAME,
@@ -38,7 +36,6 @@ exports.handler = async (event) => {
             return response(201, { message: 'Producto agregado al carrito', userId, productId });
         }
 
-        // GET /api/cart?userId=xxx - Consultar carrito
         if (method === 'GET') {
             const userId = event.queryStringParameters?.userId;
 
@@ -58,7 +55,6 @@ exports.handler = async (event) => {
             return response(200, { userId, items, total, cantidadItems: items.length });
         }
 
-        // DELETE /api/cart/{productId}?userId=xxx - Quitar item del carrito
         if (method === 'DELETE') {
             const userId = event.queryStringParameters?.userId;
             const productId = event.pathParameters?.productId;
@@ -78,7 +74,7 @@ exports.handler = async (event) => {
         return response(405, { error: 'Metodo no permitido' });
 
     } catch (error) {
-        console.error('Error:', error);
+        console.error('Error en procesar-carrito:', error);
         return response(500, { error: 'Error interno', detalle: error.message });
     }
 };
@@ -95,5 +91,3 @@ function response(statusCode, body) {
         body: JSON.stringify(body)
     };
 }
-
-// 2026 - Disenador asignatura: Ignacio A. Pastenet M.

@@ -7,13 +7,13 @@ locals {
 }
 
 # ==========================================
-# 1. VPC Y SUBREDES (3 CAPAS MULTI-AZ)
+# 1. VPC (/22) Y SUBREDES (3 CAPAS MULTI-AZ)
 # ==========================================
 resource "aws_vpc" "eks_vpc" {
   cidr_block           = "10.0.0.0/22"
   enable_dns_hostnames = true
   enable_dns_support   = true
-  tags                 = { Name = "escolaronline-vpc" }
+  tags                 = { Name = "cleanmarket-vpc" }
 }
 
 resource "aws_subnet" "pub_1a" {
@@ -22,8 +22,9 @@ resource "aws_subnet" "pub_1a" {
   availability_zone       = "${var.aws_region}a"
   map_public_ip_on_launch = true
   tags = {
-    Name                     = "escolaronline-subnet-pub-1a"
-    "kubernetes.io/role/elb" = "1"
+    Name                                      = "cleanmarket-subnet-pub-1a"
+    "kubernetes.io/role/elb"                  = "1"
+    "kubernetes.io/cluster/cleanmarket-cluster" = "shared"
   }
 }
 
@@ -33,8 +34,9 @@ resource "aws_subnet" "pub_1b" {
   availability_zone       = "${var.aws_region}b"
   map_public_ip_on_launch = true
   tags = {
-    Name                     = "escolaronline-subnet-pub-1b"
-    "kubernetes.io/role/elb" = "1"
+    Name                                      = "cleanmarket-subnet-pub-1b"
+    "kubernetes.io/role/elb"                  = "1"
+    "kubernetes.io/cluster/cleanmarket-cluster" = "shared"
   }
 }
 
@@ -43,8 +45,9 @@ resource "aws_subnet" "priv_app_1a" {
   cidr_block        = "10.0.1.0/25"
   availability_zone = "${var.aws_region}a"
   tags = {
-    Name                              = "escolaronline-subnet-priv-app-1a"
-    "kubernetes.io/role/internal-elb" = "1"
+    Name                                      = "cleanmarket-subnet-priv-app-1a"
+    "kubernetes.io/role/internal-elb"         = "1"
+    "kubernetes.io/cluster/cleanmarket-cluster" = "shared"
   }
 }
 
@@ -53,8 +56,9 @@ resource "aws_subnet" "priv_app_1b" {
   cidr_block        = "10.0.1.128/25"
   availability_zone = "${var.aws_region}b"
   tags = {
-    Name                              = "escolaronline-subnet-priv-app-1b"
-    "kubernetes.io/role/internal-elb" = "1"
+    Name                                      = "cleanmarket-subnet-priv-app-1b"
+    "kubernetes.io/role/internal-elb"         = "1"
+    "kubernetes.io/cluster/cleanmarket-cluster" = "shared"
   }
 }
 
@@ -62,14 +66,14 @@ resource "aws_subnet" "priv_data_1a" {
   vpc_id            = aws_vpc.eks_vpc.id
   cidr_block        = "10.0.2.0/26"
   availability_zone = "${var.aws_region}a"
-  tags              = { Name = "escolaronline-subnet-priv-data-1a" }
+  tags              = { Name = "cleanmarket-subnet-priv-data-1a" }
 }
 
 resource "aws_subnet" "priv_data_1b" {
   vpc_id            = aws_vpc.eks_vpc.id
   cidr_block        = "10.0.2.64/26"
   availability_zone = "${var.aws_region}b"
-  tags              = { Name = "escolaronline-subnet-priv-data-1b" }
+  tags              = { Name = "cleanmarket-subnet-priv-data-1b" }
 }
 
 # ==========================================
@@ -77,7 +81,7 @@ resource "aws_subnet" "priv_data_1b" {
 # ==========================================
 resource "aws_internet_gateway" "igw" {
   vpc_id = aws_vpc.eks_vpc.id
-  tags   = { Name = "escolaronline-igw" }
+  tags   = { Name = "cleanmarket-igw" }
 }
 
 resource "aws_route_table" "rt_pub" {
@@ -86,7 +90,7 @@ resource "aws_route_table" "rt_pub" {
     cidr_block = "0.0.0.0/0"
     gateway_id = aws_internet_gateway.igw.id
   }
-  tags = { Name = "escolaronline-rt-pub" }
+  tags = { Name = "cleanmarket-rt-pub" }
 }
 
 resource "aws_route_table_association" "rta_pub_1a" {
@@ -102,14 +106,14 @@ resource "aws_route_table_association" "rta_pub_1b" {
 # --- NAT GATEWAY ZONA A ---
 resource "aws_eip" "nat_eip_1a" {
   domain = "vpc"
-  tags   = { Name = "escolaronline-eip-nat-1a" }
+  tags   = { Name = "cleanmarket-eip-nat-1a" }
 }
 
 resource "aws_nat_gateway" "nat_1a" {
   allocation_id = aws_eip.nat_eip_1a.id
   subnet_id     = aws_subnet.pub_1a.id
   depends_on    = [aws_internet_gateway.igw]
-  tags          = { Name = "escolaronline-nat-1a" }
+  tags          = { Name = "cleanmarket-nat-1a" }
 }
 
 resource "aws_route_table" "rt_priv_1a" {
@@ -118,7 +122,7 @@ resource "aws_route_table" "rt_priv_1a" {
     cidr_block     = "0.0.0.0/0"
     nat_gateway_id = aws_nat_gateway.nat_1a.id
   }
-  tags = { Name = "escolaronline-rt-priv-1a" }
+  tags = { Name = "cleanmarket-rt-priv-1a" }
 }
 
 resource "aws_route_table_association" "rta_priv_app_1a" {
@@ -134,14 +138,14 @@ resource "aws_route_table_association" "rta_priv_data_1a" {
 # --- NAT GATEWAY ZONA B ---
 resource "aws_eip" "nat_eip_1b" {
   domain = "vpc"
-  tags   = { Name = "escolaronline-eip-nat-1b" }
+  tags   = { Name = "cleanmarket-eip-nat-1b" }
 }
 
 resource "aws_nat_gateway" "nat_1b" {
   allocation_id = aws_eip.nat_eip_1b.id
   subnet_id     = aws_subnet.pub_1b.id
   depends_on    = [aws_internet_gateway.igw]
-  tags          = { Name = "escolaronline-nat-1b" }
+  tags          = { Name = "cleanmarket-nat-1b" }
 }
 
 resource "aws_route_table" "rt_priv_1b" {
@@ -150,7 +154,7 @@ resource "aws_route_table" "rt_priv_1b" {
     cidr_block     = "0.0.0.0/0"
     nat_gateway_id = aws_nat_gateway.nat_1b.id
   }
-  tags = { Name = "escolaronline-rt-priv-1b" }
+  tags = { Name = "cleanmarket-rt-priv-1b" }
 }
 
 resource "aws_route_table_association" "rta_priv_app_1b" {
@@ -169,15 +173,15 @@ resource "aws_vpc_endpoint" "dynamodb" {
   service_name      = "com.amazonaws.${var.aws_region}.dynamodb"
   vpc_endpoint_type = "Gateway"
   route_table_ids   = [aws_route_table.rt_priv_1a.id, aws_route_table.rt_priv_1b.id]
-  tags              = { Name = "escolaronline-dynamodb-endpoint" }
+  tags              = { Name = "cleanmarket-dynamodb-endpoint" }
 }
 
 # ==========================================
-# 3. SECURITY GROUPS
+# 3. SECURITY GROUPS (SEGMENTADOS POR CAPA)
 # ==========================================
 resource "aws_security_group" "sg_alb" {
-  name        = "SG-ALB-EscolarOnline"
-  description = "Acceso HTTP/HTTPS publico al ALB"
+  name        = "SG-ALB-CleanMarket"
+  description = "Capa publica: acceso HTTP/HTTPS al ALB de CleanMarket"
   vpc_id      = aws_vpc.eks_vpc.id
 
   ingress {
@@ -201,11 +205,11 @@ resource "aws_security_group" "sg_alb" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  tags = { Name = "SG-ALB-EscolarOnline" }
+  tags = { Name = "SG-ALB-CleanMarket" }
 }
 
 resource "aws_security_group" "sg_eks" {
-  name        = "SG-EKS-EscolarOnline"
+  name        = "SG-EKS-CleanMarket"
   description = "Capa de aplicacion: EKS, Workspace y Lambda procesar-orden"
   vpc_id      = aws_vpc.eks_vpc.id
 
@@ -230,12 +234,12 @@ resource "aws_security_group" "sg_eks" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  tags = { Name = "SG-EKS-EscolarOnline" }
+  tags = { Name = "SG-EKS-CleanMarket" }
 }
 
 resource "aws_security_group" "sg_rds" {
-  name        = "SG-RDS-EscolarOnline"
-  description = "Capa de datos: acceso MySQL 3306 restringido"
+  name        = "SG-RDS-CleanMarket"
+  description = "Capa de datos: acceso MySQL 3306 restringido a EKS y Lambda"
   vpc_id      = aws_vpc.eks_vpc.id
 
   egress {
@@ -245,7 +249,7 @@ resource "aws_security_group" "sg_rds" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  tags = { Name = "SG-RDS-EscolarOnline" }
+  tags = { Name = "SG-RDS-CleanMarket" }
 }
 
 resource "aws_security_group_rule" "rds_from_sg_eks" {
@@ -268,16 +272,16 @@ resource "aws_security_group_rule" "rds_from_eks_cluster_sg" {
 }
 
 # ==========================================
-# 4. BASE DE DATOS (RDS MYSQL MULTI-AZ)
+# 4. BASE DE DATOS (RDS MYSQL MULTI-AZ CIFRADA)
 # ==========================================
 resource "aws_db_subnet_group" "rds_subnet_group" {
-  name       = "escolaronline-rds-subnet-group"
+  name       = "cleanmarket-rds-subnet-group"
   subnet_ids = [aws_subnet.priv_data_1a.id, aws_subnet.priv_data_1b.id]
-  tags       = { Name = "escolaronline-rds-subnet-group" }
+  tags       = { Name = "cleanmarket-rds-subnet-group" }
 }
 
-resource "aws_db_instance" "escolaronline_db" {
-  identifier              = "escolaronline-db"
+resource "aws_db_instance" "cleanmarket_db" {
+  identifier              = "cleanmarket-db"
   engine                  = "mysql"
   engine_version          = "8.0"
   instance_class          = "db.t4g.small"
@@ -292,14 +296,14 @@ resource "aws_db_instance" "escolaronline_db" {
   backup_retention_period = 1
   skip_final_snapshot     = true
   publicly_accessible     = false
-  tags                    = { Name = "escolaronline-db" }
+  tags                    = { Name = "cleanmarket-db" }
 }
 
 # ==========================================
-# 5. CLUSTER EKS Y NODE GROUP
+# 5. CLUSTER EKS Y NODE GROUP (CON EBS CIFRADO)
 # ==========================================
 resource "aws_eks_cluster" "eks_cluster" {
-  name     = "escolaronline-cluster"
+  name     = "cleanmarket-cluster"
   role_arn = local.lab_role_arn
 
   vpc_config {
@@ -311,21 +315,62 @@ resource "aws_eks_cluster" "eks_cluster" {
     ]
     security_group_ids = [aws_security_group.sg_eks.id]
   }
+
+  tags = { Name = "cleanmarket-cluster" }
+}
+
+resource "aws_launch_template" "eks_nodes" {
+  name_prefix = "cleanmarket-eks-nodes-"
+  description = "Launch Template con volumenes EBS gp3 cifrados para nodos EKS CleanMarket"
+
+  block_device_mappings {
+    device_name = "/dev/xvda"
+
+    ebs {
+      volume_size           = 20
+      volume_type           = "gp3"
+      encrypted             = true
+      delete_on_termination = true
+    }
+  }
+
+  tag_specifications {
+    resource_type = "instance"
+    tags = {
+      Name    = "cleanmarket-eks-node"
+      Project = "CleanMarket-Fintech-SpA"
+    }
+  }
+
+  tag_specifications {
+    resource_type = "volume"
+    tags = {
+      Name    = "cleanmarket-eks-node-ebs"
+      Project = "CleanMarket-Fintech-SpA"
+    }
+  }
 }
 
 resource "aws_eks_node_group" "eks_nodes" {
   cluster_name    = aws_eks_cluster.eks_cluster.name
-  node_group_name = "escolaronline-nodes"
+  node_group_name = "cleanmarket-nodes"
   node_role_arn   = local.lab_role_arn
   subnet_ids      = [aws_subnet.priv_app_1a.id, aws_subnet.priv_app_1b.id]
   instance_types  = [var.eks_node_instance_type]
   ami_type        = "AL2023_ARM_64_STANDARD"
+
+  launch_template {
+    id      = aws_launch_template.eks_nodes.id
+    version = aws_launch_template.eks_nodes.latest_version
+  }
 
   scaling_config {
     desired_size = 2
     max_size     = 4
     min_size     = 2
   }
+
+  tags = { Name = "cleanmarket-nodes" }
 }
 
 # ==========================================
@@ -348,14 +393,21 @@ resource "aws_instance" "workspace" {
   vpc_security_group_ids      = [aws_security_group.sg_eks.id]
   iam_instance_profile        = "LabInstanceProfile"
 
+  root_block_device {
+    volume_type           = "gp3"
+    volume_size           = 20
+    encrypted             = true
+    delete_on_termination = true
+  }
+
   user_data = <<-EOF
               #!/bin/bash
               apt-get update -y
               apt-get install -y git
 
-              git clone ${var.github_repo_url} /home/ubuntu/escolar-online-estatico
-              chmod +x /home/ubuntu/escolar-online-estatico/scripts/*.sh
-              chown -R ubuntu:ubuntu /home/ubuntu/escolar-online-estatico
+              git clone ${var.github_repo_url} /home/ubuntu/cleanmarket
+              chmod +x /home/ubuntu/cleanmarket/scripts/*.sh
+              chown -R ubuntu:ubuntu /home/ubuntu/cleanmarket
 
               mkdir -p /home/ubuntu/.aws
               cat << 'EOC' > /home/ubuntu/.aws/credentials
@@ -374,5 +426,5 @@ resource "aws_instance" "workspace" {
               chown -R ubuntu:ubuntu /home/ubuntu/.aws
               EOF
 
-  tags = { Name = "Workspace-EKS-Admin-EscolarOnline" }
+  tags = { Name = "Workspace-EKS-Admin-CleanMarket" }
 }

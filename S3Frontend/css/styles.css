@@ -1,31 +1,125 @@
-/* EscolarOnline - Estilos CSS - ACT3.3 Serverless */
-* { margin: 0; padding: 0; box-sizing: border-box; }
-body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f5f5f5; color: #333; line-height: 1.6; }
-header { background: #2c3e50; color: white; padding: 20px; text-align: center; }
-header h1 { font-size: 2em; }
-header p { opacity: 0.8; font-size: 0.9em; }
-main { max-width: 1200px; margin: 20px auto; padding: 0 20px; }
-section { background: white; border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-h2 { color: #2c3e50; margin-bottom: 15px; border-bottom: 2px solid #3498db; padding-bottom: 8px; }
-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #ddd; }
-th { background: #3498db; color: white; }
-tr:hover { background: #f0f8ff; }
-button { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9em; margin: 2px; }
-#btn-cargar { background: #3498db; color: white; margin-bottom: 10px; }
-#btn-guardar { background: #27ae60; color: white; }
-.btn-editar { background: #f39c12; color: white; }
-.btn-eliminar { background: #e74c3c; color: white; }
-.btn-carrito { background: #9b59b6; color: white; }
-.btn-orden { background: #e67e22; color: white; font-size: 1em; padding: 10px 20px; }
-button:hover { opacity: 0.85; }
-.form-group { margin-bottom: 12px; }
-.form-group label { display: block; margin-bottom: 4px; font-weight: 600; color: #555; }
-.form-group input, .form-group textarea { width: 100%; padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; }
-.form-actions { margin-top: 15px; }
-#mensaje { margin-top: 10px; padding: 8px; border-radius: 4px; }
-.mensaje-exito { background: #d4edda; color: #155724; }
-.mensaje-error { background: #f8d7da; color: #721c24; }
-footer { text-align: center; padding: 15px; background: #2c3e50; color: white; margin-top: 30px; font-size: 0.85em; }
+/* CleanMarket Fintech SpA - Estilos E-Commerce Cloud */
+:root {
+    --navy: #0f2942;
+    --teal: #0d9488;
+    --teal-dark: #0f766e;
+    --sky: #0284c7;
+    --amber: #d97706;
+    --danger: #dc2626;
+    --bg: #f0f6f9;
+    --surface: #ffffff;
+    --border: #d8e4ec;
+    --text: #1e293b;
+    --muted: #64748b;
+}
 
-/* 2026 - Disenador asignatura: Ignacio A. Pastenet M. */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+
+header {
+    background: linear-gradient(135deg, var(--navy) 0%, #164e63 60%, var(--teal-dark) 100%);
+    color: white;
+    padding: 28px 20px;
+    text-align: center;
+    box-shadow: 0 3px 12px rgba(15, 41, 66, 0.2);
+}
+header h1 { font-size: 2.1em; letter-spacing: 0.4px; }
+header p { opacity: 0.92; font-size: 1em; margin-top: 4px; }
+.arch-badge {
+    display: inline-block;
+    margin-top: 10px;
+    padding: 4px 14px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.16);
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    font-size: 0.82em;
+    font-weight: 600;
+}
+
+main { max-width: 1220px; margin: 24px auto; padding: 0 20px; }
+section {
+    background: var(--surface);
+    border-radius: 10px;
+    padding: 22px;
+    margin-bottom: 22px;
+    border: 1px solid var(--border);
+    box-shadow: 0 2px 8px rgba(15, 41, 66, 0.06);
+}
+.section-header {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+    border-bottom: 2px solid var(--teal);
+    padding-bottom: 10px;
+}
+h2 { color: var(--navy); font-size: 1.3em; margin: 0; }
+#formulario-section h2 { margin-bottom: 15px; border-bottom: 2px solid var(--teal); padding-bottom: 8px; }
+
+.cliente-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.cliente-bar label { font-weight: 600; color: var(--muted); font-size: 0.9em; }
+.cliente-bar select {
+    padding: 7px 10px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: #f8fafc;
+    color: var(--text);
+    font-size: 0.9em;
+}
+
+.table-wrapper { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; margin-top: 6px; }
+th, td { padding: 11px 12px; text-align: left; border-bottom: 1px solid var(--border); }
+th { background: var(--navy); color: white; font-weight: 600; font-size: 0.9em; }
+tr:hover { background: #f0fdfa; }
+
+button {
+    padding: 8px 14px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.88em;
+    font-weight: 600;
+    margin: 2px;
+    transition: opacity 0.15s ease, transform 0.1s ease;
+}
+button:hover { opacity: 0.88; }
+#btn-cargar { background: var(--sky); color: white; }
+.btn-secundario { background: var(--navy); color: white; }
+#btn-guardar { background: var(--teal); color: white; padding: 10px 20px; }
+.btn-cancelar { background: #94a3b8; color: white; padding: 10px 18px; }
+.btn-editar { background: var(--amber); color: white; }
+.btn-eliminar { background: var(--danger); color: white; }
+.btn-carrito { background: var(--teal); color: white; }
+.btn-orden { background: #0f766e; color: white; font-size: 1em; padding: 10px 22px; margin-top: 10px; }
+
+#carrito-contenido ul { list-style: none; margin-bottom: 12px; }
+#carrito-contenido li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+}
+.cart-total { font-size: 1.1em; color: var(--navy); margin-top: 8px; }
+.empty-state { color: var(--muted); font-style: italic; }
+
+.form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; }
+.form-group { margin-bottom: 12px; }
+.form-group label { display: block; margin-bottom: 4px; font-weight: 600; color: #334155; font-size: 0.92em; }
+.form-group input, .form-group textarea {
+    width: 100%;
+    padding: 9px 12px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 0.95em;
+}
+.form-actions { margin-top: 10px; }
+
+#mensaje { margin-top: 12px; padding: 10px 14px; border-radius: 6px; font-weight: 600; }
+.mensaje-exito { background: #ccfbf1; color: #115e59; border: 1px solid #5eead4; }
+.mensaje-error { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+
+footer { text-align: center; padding: 16px; background: var(--navy); color: #e2e8f0; margin-top: 32px; font-size: 0.86em; }

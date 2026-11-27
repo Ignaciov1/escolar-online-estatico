@@ -5,27 +5,25 @@ const { DynamoDBDocumentClient, QueryCommand, BatchWriteCommand } = require('@aw
 const dynamoClient = new DynamoDBClient({});
 const docClient = DynamoDBDocumentClient.from(dynamoClient);
 
-const TABLE_NAME = process.env.TABLE_NAME || 'carrito-escolaronline';
+const TABLE_NAME = process.env.TABLE_NAME || 'carrito-cleanmarket';
 
 const dbConfig = {
     host: process.env.DB_HOST,
     user: process.env.DB_USER || 'alumno',
     password: process.env.DB_PASS || 'alumno123',
-    database: process.env.DB_NAME || 'escolar_online',
+    database: process.env.DB_NAME || 'cleanmarket',
     port: parseInt(process.env.DB_PORT, 10) || 3306
 };
 
-// Handler: trigger SQS (recibe batch de mensajes)
 exports.handler = async (event) => {
-    console.log(`Procesando ${event.Records.length} mensaje(s) de SQS`);
+    console.log(`CleanMarket Process-Order: procesando ${event.Records.length} mensaje(s) de SQS`);
 
     for (const record of event.Records) {
         let connection;
         try {
             const order = JSON.parse(record.body);
-            console.log(`Procesando orden: ${order.orderId} para usuario: ${order.userId}`);
+            console.log(`Procesando orden ${order.orderId} para cliente ${order.userId}`);
 
-            // 1. Guardar orden y descontar stock en MySQL dentro de una transaccion
             connection = await mysql.createConnection(dbConfig);
             await connection.beginTransaction();
 
@@ -50,7 +48,6 @@ exports.handler = async (event) => {
             await connection.commit();
             console.log(`Orden ${order.orderId} guardada y stock descontado en MySQL`);
 
-            // 2. Limpiar carrito del usuario en DynamoDB
             const cartItems = await docClient.send(new QueryCommand({
                 TableName: TABLE_NAME,
                 KeyConditionExpression: 'userId = :uid',
@@ -70,15 +67,15 @@ exports.handler = async (event) => {
                         RequestItems: { [TABLE_NAME]: batch }
                     }));
                 }
-                console.log(`Carrito limpiado para usuario: ${order.userId}`);
+                console.log(`Carrito limpiado para cliente: ${order.userId}`);
             }
 
-            console.log(`Orden ${order.orderId} procesada exitosamente`);
+            console.log(`Orden ${order.orderId} confirmada: Su pedido fue procesado`);
         } catch (error) {
             if (connection) {
                 try { await connection.rollback(); } catch (_) {}
             }
-            console.error(`Error procesando mensaje: ${error.message}`);
+            console.error(`Error procesando mensaje SQS: ${error.message}`);
             throw error;
         } finally {
             if (connection) {
@@ -87,7 +84,5 @@ exports.handler = async (event) => {
         }
     }
 
-    return { statusCode: 200, body: 'Ordenes procesadas' };
+    return { statusCode: 200, body: 'Su pedido fue procesado' };
 };
-
-// 2026 - Disenador asignatura: Ignacio A. Pastenet M.

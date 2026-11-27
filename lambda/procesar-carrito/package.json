@@ -1,7 +1,7 @@
 {
-  "name": "escolaronline-procesar-carrito",
+  "name": "cleanmarket-procesar-carrito",
   "version": "1.0.0",
-  "description": "Lambda para CRUD carrito de compras (DynamoDB)",
+  "description": "Lambda Cart CleanMarket Fintech SpA - CRUD carrito de compras en DynamoDB con TTL",
   "main": "index.js",
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.400.0",

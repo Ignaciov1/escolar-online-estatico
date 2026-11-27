@@ -1,69 +1,29 @@
-# EscolarOnline — Arquitectura Hibrida Serverless (EA3)
+# CleanMarket Fintech SpA - Plataforma Cloud Hibrida (EFT ARY1102)
 
 ## Descripcion
 
-Evolucion de la aplicacion EscolarOnline hacia un modelo hibrido que combina EKS (CRUD productos) con servicios serverless (carrito + ordenes). Agrega funcionalidades de carrito de compras y procesamiento de ordenes desacoplado.
+Plataforma e-commerce moderna para la comercializacion online de productos de higiene y limpieza (hogares, oficinas e industrias), construida sobre AWS con arquitectura hibrida PaaS (Amazon EKS) + Serverless (API Gateway, AWS Lambda, DynamoDB y SQS) automatizada con Terraform y Bash.
 
-## Arquitectura TO-BE (Hibrida: EKS + Serverless)
+## Arquitectura TO-BE
 
 | Capa | Componente | Servicio AWS |
 |------|-----------|--------------|
-| Frontend | Sitio web estatico | S3 Static Website |
-| API | Punto de entrada unico | API Gateway REST |
-| Contenedores | CRUD Productos (4 pods) | EKS → RDS MySQL |
-| Serverless | Carrito | Lambda Cart → DynamoDB |
-| Serverless | Crear orden | Lambda Create-Order → SQS |
-| Serverless | Procesar orden | Lambda Process-Order (trigger SQS) → RDS MySQL |
-| Mensajeria | Cola ordenes | SQS |
-| BD NoSQL | Carrito temporal | DynamoDB (TTL 24h) |
-| BD Relacional | Productos + ordenes | RDS MySQL Multi-AZ |
+| Red | VPC Multi-AZ 10.0.0.0/22 (6 subredes: 2 Pub, 2 Priv APP, 2 Priv DATA) + IGW + 2 NAT GW + VPC Endpoint Gateway | Amazon VPC |
+| Frontend | Sitio web estatico HTML/CSS/JS | Amazon S3 Static Website |
+| API | Punto de entrada unico con CORS y Throttling | Amazon API Gateway REST |
+| Balanceo | Enrutamiento por metodo HTTP hacia pods CRUD | Application Load Balancer (ALB) |
+| Contenedores | 4 microservicios CRUD Node.js + 4 HPAs + EBS cifrado | Amazon EKS + Amazon ECR |
+| Serverless | 3 funciones Node.js 20 ARM64 con limites de concurrencia | AWS Lambda |
+| Mensajeria | Procesamiento asincrono de ordenes + Dead-Letter Queue (3 reintentos) | Amazon SQS + DLQ |
+| BD Relacional | Catalogo de productos, clientes y ordenes (cifrada Multi-AZ) | Amazon RDS MySQL 8.0 |
+| BD NoSQL | Carrito temporal con expiracion automatica TTL (expiresAt) | Amazon DynamoDB |
+| Observabilidad | Container Insights Enhanced + Logs Lambda/EKS + Dashboard | Amazon CloudWatch |
 
-## Estructura de Archivos
+## Flujo de Despliegue
 
-```
-desarrolloApp-ACT3.3/
-├── README.md                          (este archivo)
-├── docker-compose.yml                 (prueba local microservicios backend)
-├── init.sql                           (schema extendido: productos + ordenes)
-├── S3Frontend/
-│   ├── index.html                     (con carrito + ordenes)
-│   ├── css/styles.css
-│   └── js/app.js                      (logica CRUD + carrito + ordenes)
-├── microserviciosEKSBackend/
-│   ├── get-products/  (Dockerfile, index.js, package.json)
-│   ├── create-product/
-│   ├── update-product/
-│   └── delete-product/
-├── lambda/
-│   ├── procesar-carrito/
-│   │   ├── index.js                   (CRUD carrito → DynamoDB)
-│   │   └── package.json
-│   ├── crear-orden/
-│   │   ├── index.js                   (calcula total → SQS)
-│   │   └── package.json
-│   └── procesar-orden/
-│       ├── index.js                   (consumer SQS → MySQL)
-│       └── package.json
-├── k8s/
-│   ├── namespace.yaml
-│   ├── configmap.yaml
-│   ├── secret.yaml
-│   └── deployments.yaml               (4 pods + services + ingress + HPA)
-└── scripts/
-    └── ecr-push.sh
-```
-
-## Prerequisitos
-
-- Cluster EKS de EA2 funcionando (4 pods CRUD)
-- RDS MySQL Multi-AZ de EA2 funcionando
-- ALB Ingress de EA2 funcionando
-- AWS Academy Learner Lab activo
-
-## Guia de Implementacion
-
-Consultar: **Act-3.3-Anexo-Paso-a-Paso-Implementacion-Serverless.md**
-
----
-
-2026 - Disenador: Ignacio A. Pastenet M.
+1. Actualizar credenciales de AWS Academy en terraform/terraform.tfvars y variables de entorno locales.
+2. Ejecutar desde terraform/ los comandos terraform init y terraform apply -auto-approve.
+3. Conectar por SSM Session Manager a Workspace-EKS-Admin-CleanMarket y ejecutar:
+    sudo cloud-init status --wait
+    sudo su - ubuntu
+    ~/cleanmarket/scripts/deploy-automatizado.sh

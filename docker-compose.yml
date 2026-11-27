@@ -1,16 +1,13 @@
-# EscolarOnline - Docker Compose Local (ACT3.3 - Solo microservicios backend)
-# Nota: Lambdas y S3 no se prueban con docker-compose (se prueban en AWS)
-# Este compose es para validar que los 4 microservicios CRUD funcionan localmente
-
+# CleanMarket Fintech SpA - Docker Compose Local (Solo microservicios CRUD EKS)
 services:
   db:
     image: mysql:8.0
-    container_name: escolaronline-db
+    container_name: cleanmarket-db
     environment:
       MYSQL_ROOT_PASSWORD: root123
       MYSQL_USER: alumno
       MYSQL_PASSWORD: alumno123
-      MYSQL_DATABASE: escolar_online
+      MYSQL_DATABASE: cleanmarket
     ports:
       - "3306:3306"
     volumes:
@@ -22,81 +19,79 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - escolaronline-net
+      - cleanmarket-net
 
   get-products:
     build: ./microserviciosEKSBackend/get-products
-    container_name: escolaronline-get-products
+    container_name: cleanmarket-get-products
     ports:
       - "3001:3001"
     environment:
       DB_HOST: db
       DB_USER: alumno
       DB_PASS: alumno123
-      DB_NAME: escolar_online
+      DB_NAME: cleanmarket
       PORT: 3001
     depends_on:
       db:
         condition: service_healthy
     networks:
-      - escolaronline-net
+      - cleanmarket-net
 
   create-product:
     build: ./microserviciosEKSBackend/create-product
-    container_name: escolaronline-create-product
+    container_name: cleanmarket-create-product
     ports:
       - "3002:3002"
     environment:
       DB_HOST: db
       DB_USER: alumno
       DB_PASS: alumno123
-      DB_NAME: escolar_online
+      DB_NAME: cleanmarket
       PORT: 3002
     depends_on:
       db:
         condition: service_healthy
     networks:
-      - escolaronline-net
+      - cleanmarket-net
 
   update-product:
     build: ./microserviciosEKSBackend/update-product
-    container_name: escolaronline-update-product
+    container_name: cleanmarket-update-product
     ports:
       - "3003:3003"
     environment:
       DB_HOST: db
       DB_USER: alumno
       DB_PASS: alumno123
-      DB_NAME: escolar_online
+      DB_NAME: cleanmarket
       PORT: 3003
     depends_on:
       db:
         condition: service_healthy
     networks:
-      - escolaronline-net
+      - cleanmarket-net
 
   delete-product:
     build: ./microserviciosEKSBackend/delete-product
-    container_name: escolaronline-delete-product
+    container_name: cleanmarket-delete-product
     ports:
       - "3004:3004"
     environment:
       DB_HOST: db
       DB_USER: alumno
       DB_PASS: alumno123
-      DB_NAME: escolar_online
+      DB_NAME: cleanmarket
       PORT: 3004
     depends_on:
       db:
         condition: service_healthy
     networks:
-      - escolaronline-net
+      - cleanmarket-net
 
 volumes:
   mysql_data:
 
 networks:
-  escolaronline-net:
+  cleanmarket-net:
     driver: bridge
-
-# 2026 - Disenador asignatura: Ignacio A. Pastenet M.
